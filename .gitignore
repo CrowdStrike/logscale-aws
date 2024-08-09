@@ -1,0 +1,9 @@
+# Terraform files
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+terraform.tfvars.*
+*.json
+.terraform.lock.hcl
+*/*/.terraform.lock.hcl

@@ -1,0 +1,116 @@
+podSecurityPolicy:
+  create: false
+
+storageClasses:
+  - name: topolvm-provisioner # Defines name of storage class.
+    storageClass:
+      # Supported filesystems are: ext4, xfs, and btrfs.
+      fsType: ext4
+      # reclaimPolicy
+      reclaimPolicy: Delete
+      # Additional annotations
+      annotations: {}
+      # Default storage class for dynamic volume provisioning
+      # ref: https://kubernetes.io/docs/concepts/storage/dynamic-provisioning
+      isDefaultClass: false
+      # volumeBindingMode can be either WaitForFirstConsumer or Immediate. WaitForFirstConsumer is recommended because TopoLVM cannot schedule pods wisely if volumeBindingMode is Immediate.
+      volumeBindingMode: WaitForFirstConsumer
+      # enables CSI drivers to expand volumes. This feature is available for Kubernetes 1.16 and later releases.
+      allowVolumeExpansion: true
+      additionalParameters:
+        topolvm.io/device-class: default
+
+lvmd:
+  managed: true
+  deviceClasses:
+    - name: default
+      volume-group: instancestore # Change this value to your VG name.
+      default: true
+      spare-gb: 10
+      # lvcreate-options:
+      # - "--type=raid1"
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                  - linux
+              - key: storageclass
+                operator: In
+                values:
+                  - nvme
+              # - key: storageVolumeGroup
+              #   operator: DoesNotExist
+  tolerations:
+    # - effect: NoSchedule
+    #   operator: Exists
+    # - key: CriticalAddonsOnly
+    #   operator: Exists
+    # - effect: NoExecute
+    #   operator: Exists
+    - key: "storageclass"
+      operator: "Exists"
+    #- key: "computeClass"
+    #  operator: "Exists"
+
+node:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                  - linux
+              - key: storageclass
+                operator: In
+                values:
+                  - nvme
+              # - key: storageVolumeGroup
+              #   operator: DoesNotExist
+  tolerations:
+    # - effect: NoSchedule
+    #   operator: Exists
+    # - key: CriticalAddonsOnly
+    #   operator: Exists
+    # - effect: NoExecute
+    #   operator: Exists
+    - key: "storageclass"
+      operator: "Exists"
+    #- key: "computeClass"
+    #  operator: "Exists"
+
+controller:
+  storageCapacityTracking:
+    enabled: true
+  tolerations:
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
+
+scheduler:
+  enabled: false
+webhook:
+  podMutatingWebhook:
+    enabled: false
+cert-manager:
+  enabled: true
+  installCRDs: false
+  tolerations:
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
+  webhook:
+    tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
+  cainjector:
+    tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
+  startupapicheck:
+    tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"

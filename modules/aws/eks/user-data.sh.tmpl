@@ -1,0 +1,88 @@
+#!/bin/bash
+set -euo pipefail
+
+export LVM_SUPPRESS_FD_WARNINGS=1
+
+LOGFILE="/var/log/user-data.log"
+exec > >(tee -a "$LOGFILE") 2>&1
+
+declare -r mount_path="/mnt/disks/vol1"
+declare -r vg_name="instancestore"
+declare -r disks=($(find /dev/disk/by-id -iname 'nvme-Amazon_EC2_NVMe_Instance_Storage_*-ns-*'))
+
+# Logging function
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1"
+}
+
+log "User-data script started."
+
+# Install necessary packages for LVM and RAID
+log "Installing mdadm and lvm2"
+yum install -y mdadm lvm2
+
+# Update LVM filter
+log "Updating LVM filter"
+sed -i 's/filter = \[ "a\/.*\/" \]/filter = \[ "a|\/dev\/nvme.*|", "r|.*|" \]/' /etc/lvm/lvm.conf
+
+# Ensure the LVM service is restarted to apply the filter changes
+log "Restarting LVM services"
+systemctl restart lvm2-lvmetad.service
+systemctl restart lvm2-lvmetad.socket
+
+# Unmount disks if they are mounted
+for disk in "$${disks[@]}"; do
+    if mount | grep -q "$disk"; then
+        log "Unmounting $disk"
+        umount "$disk"
+    fi
+done
+
+create_raid_array() {
+    log "Creating RAID 0 array with disks: $${disks[*]}"
+    mdadm --create --verbose /dev/md0 --level=0 --raid-devices="$${#disks[@]}" "$${disks[@]}"
+}
+
+create_volume_group() {
+    log "Creating physical volume on /dev/md0"
+    pvcreate /dev/md0
+
+    log "Creating volume group $vg_name"
+    vgcreate $vg_name /dev/md0
+}
+
+if [ "$${#disks[@]}" -eq "1" ]; then
+    log "Single disk found. Creating volume group."
+    pvcreate "$${disks[0]}"
+    vgcreate $vg_name "$${disks[0]}"
+elif [ "$${#disks[@]}" -gt "1" ]; then
+    create_raid_array
+    create_volume_group
+else
+    log "No suitable disks found for RAID configuration."
+fi
+
+# Configure kernel parameters for kubelet
+log "Configuring kernel parameters for kubelet"
+cat > /etc/sysctl.d/90-kubelet.conf <<EOF
+vm.overcommit_memory=1
+kernel.panic=10
+kernel.panic_on_oops=1
+EOF
+sysctl -p /etc/sysctl.d/90-kubelet.conf
+
+# Set up permissions for Humio directories
+log "Setting up permissions for Humio directories"
+if [ -d "$${humio_data_dir:-}" ]; then
+    chown "${humio_data_dir_owner_uuid}:${humio_data_dir_owner_uuid}" "${humio_data_dir}"
+fi
+
+# Output the RAID status
+log "Checking RAID status"
+cat /proc/mdstat
+
+log "Checking logical volume status"
+vgdisplay
+lvdisplay
+
+log "User-data script execution completed."
