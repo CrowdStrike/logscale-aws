@@ -61,6 +61,18 @@ data "http" "humioactions" {
   url = "https://raw.githubusercontent.com/humio/humio-operator/humio-operator-${var.humio_operator_version}/config/crd/bases/core.humio.com_humioactions.yaml"
 }
 
+data "http" "humioscheduledsearches" {
+  url = "https://raw.githubusercontent.com/humio/humio-operator/humio-operator-${var.humio_operator_version}/config/crd/bases/core.humio.com_humioscheduledsearches.yaml"
+}
+
+data "http" "humiofilteralerts" {
+  url = "https://raw.githubusercontent.com/humio/humio-operator/humio-operator-${var.humio_operator_version}/config/crd/bases/core.humio.com_humiofilteralerts.yaml"
+}
+
+data "http" "humioaggregatealerts" {
+  url = "https://raw.githubusercontent.com/humio/humio-operator/humio-operator-${var.humio_operator_version}/config/crd/bases/core.humio.com_humioaggregatealerts.yaml"
+}
+
 # Decode and filter out the 'status' attribute from the CRD manifests
 locals {
   crds_manifests = flatten([
@@ -72,7 +84,10 @@ locals {
       data.http.humiorepositories,
       data.http.humioviews,
       data.http.humioalerts,
-      data.http.humioactions
+      data.http.humioactions,
+      data.http.humioscheduledsearches,
+      data.http.humiofilteralerts,
+      data.http.humioaggregatealerts
       ] : [
       { for k, v in yamldecode(data.response_body) : k => v if k != "status" }
     ]

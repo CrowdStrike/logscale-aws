@@ -170,7 +170,7 @@ resource "kubernetes_manifest" "humio_cluster_type_basic" {
             "storage" = var.logscale_digest_data_disk_size
           }
         }
-        "storageClassName" = "topolvm-provisioner"
+        "storageClassName" = "gp2"
       }
       "digestPartitionsCount" = 840
       "extraKafkaConfigs"     = "security.protocol=SSL"
@@ -343,7 +343,7 @@ resource "kubernetes_manifest" "humio_cluster_type_ingress" {
             "storage" = var.logscale_ingress_data_disk_size
           }
         }
-        "storageClassName" = "topolvm-provisioner"
+        "storageClassName" = "gp2"
       }
       "digestPartitionsCount" = 840
       "extraKafkaConfigs"     = "security.protocol=SSL"
@@ -482,7 +482,7 @@ resource "kubernetes_manifest" "humio_cluster_type_ingress" {
                   "storage" = var.logscale_ingress_data_disk_size
                 }
               }
-              "storageClassName" = "topolvm-provisioner"
+              "storageClassName" = "gp2"
             }
             "extraKafkaConfigs" = "security.protocol=SSL"
             "environmentVariables" = [
@@ -679,7 +679,7 @@ resource "kubernetes_manifest" "humio_cluster_type_internal_ingest" {
             "storage" = var.logscale_ingest_data_disk_size
           }
         }
-        "storageClassName" = "topolvm-provisioner"
+        "storageClassName" = "gp2"
       }
       "digestPartitionsCount" = 840
       "extraKafkaConfigs"     = "security.protocol=SSL"
