@@ -7,4 +7,7 @@ locals {
     key => local.cluster_size_template[key]
   }
   cluster_size_selected = local.cluster_size_rendered[var.logscale_cluster_size]
+  cluster_size          = merge(local.cluster_size_selected, {kafka_broker_data_storage_class = local.cluster_size_selected["kafka_broker_data_disk_type"]})
+  kubeconfig_filepath   = var.kubeconfig_filepath != "" ? var.kubeconfig_filepath : "${path.root}/kubeconfig"
+
 }

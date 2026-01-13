@@ -2,10 +2,10 @@ data "aws_caller_identity" "current" {}
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.0"
+  version = "~> 21.1.1"
 
-  cluster_name             = var.cluster_name
-  cluster_version          = var.cluster_version
+  name                     = var.cluster_name
+  kubernetes_version       = var.cluster_version
   subnet_ids               = var.private_subnets
   control_plane_subnet_ids = var.intra_subnets
 
@@ -15,15 +15,15 @@ module "eks" {
 
   authentication_mode = "API_AND_CONFIG_MAP"
 
-  cluster_endpoint_public_access = var.cluster_endpoint_public_access
+  endpoint_public_access = var.cluster_endpoint_public_access
 
-  cluster_enabled_log_types = var.cluster_enabled_log_types
+  enabled_log_types = var.cluster_enabled_log_types
 
   kms_key_administrators = [data.aws_caller_identity.current.arn]
 
   kms_key_owners = [data.aws_caller_identity.current.arn]
 
-  cluster_addons = {
+  addons = {
     coredns = {
       most_recent = true
     }
@@ -47,7 +47,6 @@ module "eks" {
     }
   }
 
-  eks_managed_node_groups = local.eks_managed_node_groups
-
+  eks_managed_node_groups = var.provision_kafka_servers ? merge(local.eks_managed_node_groups, {kafka_node_group = local.kafka_node_group}) : local.eks_managed_node_groups
   tags = var.tags
 }

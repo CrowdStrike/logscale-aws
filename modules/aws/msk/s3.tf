@@ -1,6 +1,6 @@
 module "s3_logs_bucket_msk" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "~> 4.1.2"
+  version = "~> 5.5.0"
 
   bucket_prefix = "${var.msk_cluster_name}-"
 

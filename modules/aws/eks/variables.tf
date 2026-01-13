@@ -121,6 +121,43 @@ variable "ui_instance_type" {
   type        = string
 }
 
+# Kafka
+variable "provision_kafka_servers" {
+  description = "Set this to true to provision strimzi kafka within this kubernetes cluster. It should be false if you are bringing your own kafka implementation."
+  default = false
+  type = bool
+}
+
+variable "kafka_broker_node_count" {
+  description = "The desired capacity for the Kafka managed node group."
+  type        = number
+}
+
+variable "kafka_broker_min_node_count" {
+  description = "The maximum capacity for the Kafka managed node group."
+  type        = number
+}
+
+variable "kafka_broker_max_node_count" {
+  description = "The minimum capacity for the Kafka managed node group."
+  type        = number
+}
+
+variable "kafka_broker_instance_type" {
+  description = "The instance type for the Kafka managed node group."
+  type        = string
+}
+
+variable "kafka_broker_data_disk_type" {
+  description = "Kafka node disk type"
+  type        = string
+}
+
+variable "kafka_broker_data_disk_size" {
+  description = "Kafka node root disk size"
+  type        = string
+}
+
 variable "tags" {
   description = "map pf tags to be applied to AWS resources"
   type        = map(string)
@@ -197,9 +234,10 @@ variable "cluster_endpoint_public_access" {
 variable "logscale_cluster_type" {
   description = "Logscale cluster type"
   type        = string
+
   validation {
-    condition     = contains(["basic", "ingress", "internal-ingest"], var.logscale_cluster_type)
-    error_message = "logscale_cluster_type must be one of: basic, advanced, or internal-ingest"
+    condition       = contains(["basic", "ingress", "dedicated-ui", "advanced"], var.logscale_cluster_type)
+    error_message   = "logscale_cluster_type must be one of: basic, ingress, dedicated-ui or advanced"
   }
 }
 
