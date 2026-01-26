@@ -7,10 +7,16 @@ locals {
       logscale_node_group         = local.logscale_node_group
       logscale_ingress_node_group = local.logscale_ingress_node_group
     }
-    "internal-ingest" = {
-      logscale_node_group        = local.logscale_node_group
-      logscale_ingest_node_group = local.logscale_ingest_node_group
-      logscale_ui_node_group     = local.logscale_ui_node_group
+    "dedicated-ui" = {
+      logscale_ingress_node_group = local.logscale_ingress_node_group
+      logscale_node_group         = local.logscale_node_group
+      logscale_ui_node_group      = local.logscale_ui_node_group
+    }
+    "advanced" = {
+      logscale_ingress_node_group = local.logscale_ingress_node_group
+      logscale_node_group         = local.logscale_node_group
+      logscale_ingest_node_group  = local.logscale_ingest_node_group
+      logscale_ui_node_group      = local.logscale_ui_node_group
     }
   }, var.logscale_cluster_type, {})
 
@@ -42,8 +48,12 @@ locals {
 
     iam_role_additional_policies = {
       "ssm_managed_core" = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+      "s3_access_policy" = "${aws_iam_policy.logscale_iam_policy.arn}"
     }
 
+    metadata_options = {
+      http_put_response_hop_limit = 2
+    }
 
     timeouts = {
       delete = "1h"
@@ -60,13 +70,8 @@ locals {
 
     instance_types = [var.logscale_instance_type]
 
-    pre_bootstrap_user_data = templatefile("${path.module}/${var.user_data_script}", {
-      humio_data_dir            = var.humio_data_dir,
-      humio_data_dir_owner_uuid = var.humio_data_dir_owner_uuid
-    })
-
     labels = merge(local.common_labels, {
-      k8s-app      = "logscale"
+      k8s-app      = "logscale-digest"
       storageclass = "nvme"
     })
   })
@@ -79,11 +84,6 @@ locals {
     desired_size = var.ingress_node_desired_capacity
 
     instance_types = [var.ingress_instance_type]
-
-    pre_bootstrap_user_data = templatefile("${path.module}/${var.user_data_script}", {
-      humio_data_dir            = var.humio_data_dir,
-      humio_data_dir_owner_uuid = var.humio_data_dir_owner_uuid
-    })
 
     labels = merge(local.common_labels, {
       k8s-app = "logscale-ingress"
@@ -154,6 +154,32 @@ locals {
 
     labels = merge(local.common_labels, {
       k8s-app = "logscale-ui"
+    })
+  })
+
+  # Kafka
+  kafka_node_group = merge(local.common_properties, {
+    name = "kafka"
+
+    min_size     = var.kafka_broker_min_node_count
+    max_size     = var.kafka_broker_max_node_count
+    desired_size = var.kafka_broker_node_count
+
+    instance_types = [var.kafka_broker_instance_type]
+
+    block_device_mappings = {
+      xvda = {
+        device_name = "/dev/xvda"
+        ebs = {
+          volume_size           = var.kafka_broker_data_disk_size
+          volume_type           = var.kafka_broker_data_disk_type
+          delete_on_termination = true
+        }
+      }
+    }
+
+    labels = merge(local.common_labels, {
+      k8s-app      = "strimzi"
     })
   })
 }

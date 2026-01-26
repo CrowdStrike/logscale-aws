@@ -16,6 +16,77 @@ Before starting the deployment, ensure you have the following tools and access:
 - **Access to an AWS account**: You need access to an AWS account with permissions to create and manage the necessary resources such as VPCs, EKS clusters, MSK clusters, and S3 buckets.
 
 
+## Terraform Code Execution
+1. #### Setup steps
+    1.1 Ensure an AWS Route 53 public zone is created and add its name to `zonename` in `example.tfvars`.
+
+    1.2 Ensure a S3 bucket is created to hold the terraform state, and add its name to `bucket` under the backend configuration section from `versions.tf`.
+
+    1.3 Ensure a Dynamodb table with partition key `LockID` is created to hold the terraform lock, and add its name to `dynamodb_table` under the backend configuration section from `versions.tf`.
+
+    1.4 Configure the following variables in the `example.tfvars` file: `hostname`, `cluster_name`, `msk_cluster_name`, `vpc_name` and `aws_region`.
+
+    1.5 Export the LogScale license as a Terraform environment variable:
+    ```bash
+    export TF_VAR_humiocluster_license=<your_logscale_license>
+    ```
+    1.6. Create and switch to a new Terraform workspace:
+    ```bash
+    terraform workspace new <workspace_name>
+    terraform workspace select <workspace_name>
+    ```
+2. #### Deployment steps
+
+    Run the following Terraform commands against each Terraform module in sequence to provision the EKS cluster and deploy the LogScale application:
+
+    2.1 Initialize Terraform
+    ```bash
+    terraform init
+    ```
+
+    2.2 Plan the Terraform deployment
+    ```bash
+    terraform plan
+    ```
+    Or you could target a specific module
+    ```bash
+    terraform plan -target="module.vpc"
+    ```
+
+    2.3 Deploy VPC
+    ```bash
+    terraform apply -target="module.vpc"
+    ```
+
+    2.4 Deploy MSK cluster
+    ```bash
+    terraform apply -target="module.msk"
+    ```
+
+    2.5 Build EKS cluster
+    ```bash
+    terraform apply -target="module.eks"
+    ```
+
+    2.6 Deploy CRDs
+
+    * Observation : You may need to update the local .kube/config if running this command locally
+
+    ```bash
+    aws eks update-kubeconfig --name "<your-eks-cluster-name>" --region <your-region>
+    Updated context arn:aws:eks:<region>:<id>:cluster/<your-eks-cluster-name> in /Users/<local_user>/.kube/config
+    ```
+
+    ```bash
+    terraform apply -target="module.crds
+    ```
+
+    2.7 Deploy LogScale
+    ```bash
+    terraform apply -target="module.logscale"
+    ```
+
+
 ## Repository Structure
 
 - `main.tf`: Contains the main Terraform configuration and module definitions for setting up the VPC, EKS, MSK, CRDs, and LogScale.
@@ -162,65 +233,6 @@ Deploys the LogScale application on the EKS cluster.
 | `hostname`                          | Hostname of the LogScale cluster               | string         |                        |
 | `route53_record_ttl`                | TTL for the hostname.zone_name domain          | number         | 60                     |
 
-
-## Terraform Code Execution
-1. Export the LogScale license as a Terraform environment variable:
-    ```bash
-    export TF_VAR_humiocluster_license=<your_logscale_license>
-    ```
-2. Create and switch to a new Terraform workspace:
-    ```bash
-    terraform workspace new <workspace_name>
-    terraform workspace select <workspace_name>
-    ```
-3. Run the following Terraform commands against each Terraform module in sequence to provision the EKS cluster and deploy the LogScale application:
-
-    2.1 Initialize Terraform
-    ```bash
-    terraform init
-    ```
-
-    2.2 Plan the Terraform deployment
-    ```bash
-    terraform plan
-    ```
-    Or you could target a specific module
-    ```bash
-    terraform plan -target="module.vpc"
-    ```
-
-    2.3 Deploy VPC
-    ```bash
-    terraform apply -target="module.vpc"
-    ```
-
-    2.4 Deploy MSK cluster
-    ```bash
-    terraform apply -target="module.msk"
-    ```
-
-    2.5 Build EKS cluster
-    ```bash
-    terraform apply -target="module.eks"
-    ```
-
-    2.6 Deploy CRDs
-
-    * Observation : You may need to update the local .kube/config if running this command locally
-
-    ```bash
-    aws eks update-kubeconfig --name "<your-eks-cluster-name>" --region <your-region>
-    Updated context arn:aws:eks:<region>:<id>:cluster/<your-eks-cluster-name> in /Users/<local_user>/.kube/config
-    ```
-
-    ```bash
-    terraform apply -target="module.crds
-    ```
-
-    2.7 Deploy LogScale
-    ```bash
-    terraform apply -target="module.logscale"
-    ```
 
 ## References
 - [Cert Manager Documentation](https://cert-manager.io/docs/)

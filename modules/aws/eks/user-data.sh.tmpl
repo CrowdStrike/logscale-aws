@@ -7,7 +7,7 @@ LOGFILE="/var/log/user-data.log"
 exec > >(tee -a "$LOGFILE") 2>&1
 
 declare -r mount_path="/mnt/disks/vol1"
-declare -r vg_name="instancestore"
+declare -r vg_name="nvme-vg"
 declare -r disks=($(find /dev/disk/by-id -iname 'nvme-Amazon_EC2_NVMe_Instance_Storage_*-ns-*'))
 
 # Logging function
@@ -21,14 +21,22 @@ log "User-data script started."
 log "Installing mdadm and lvm2"
 yum install -y mdadm lvm2
 
+log "LVM2 version: $(lvm version)"
+
 # Update LVM filter
 log "Updating LVM filter"
 sed -i 's/filter = \[ "a\/.*\/" \]/filter = \[ "a|\/dev\/nvme.*|", "r|.*|" \]/' /etc/lvm/lvm.conf
 
-# Ensure the LVM service is restarted to apply the filter changes
-log "Restarting LVM services"
-systemctl restart lvm2-lvmetad.service
-systemctl restart lvm2-lvmetad.socket
+if systemctl list-unit-files | grep -q lvm2-lvmetad; then
+    log "Restarting LVM metadata daemon services (older LVM2 version)"
+    systemctl restart lvm2-lvmetad.service || log "Failed to restart lvm2-lvmetad.service, but continuing anyway"
+    systemctl restart lvm2-lvmetad.socket || log "Failed to restart lvm2-lvmetad.socket, but continuing anyway"
+else
+    log "LVM metadata daemon not found (newer LVM2 version), skipping restart"
+    # For newer LVM2 versions, we need to ensure the LVM configuration is reloaded
+    lvmconfig --mergedconfig
+    pvscan --cache
+fi
 
 # Unmount disks if they are mounted
 for disk in "$${disks[@]}"; do

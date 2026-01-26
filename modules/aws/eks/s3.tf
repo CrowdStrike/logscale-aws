@@ -1,6 +1,6 @@
 module "s3_logs_bucket_logscale" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "~> 4.1.2"
+  version = "~> 5.5.0"
 
   bucket        = var.s3_bucket_prefix != "" ? null : var.cluster_name
   bucket_prefix = var.s3_bucket_prefix != "" ? var.s3_bucket_prefix : null

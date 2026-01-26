@@ -4,24 +4,28 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "5.59.0"
+      version = ">= 6.10.0"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = ">= 2.31.0"
+      version = ">= 2.32.0"
     }
     helm = {
       source  = "hashicorp/helm"
       version = ">= 2.13.2"
     }
+    random = {
+      source = "hashicorp/random"
+      version = ">= 3.7.2"
+    }
   }
 
   backend "s3" {
-    bucket         = ""  # your S3 backend bucket name
+    bucket         = "logscale-tf-state"  # Your S3 backend bucket name
     key            = "state/terraform.tfstate"
-    region         = "us-west-2"
-    dynamodb_table = "terraform-state-locks"
+    region         = "eu-central-1"
+    dynamodb_table = "logscale-tf-state-locks" # Your DynamoDB Table name
     encrypt        = true
-    profile        = "logscale-aws"
+    profile        = "logscale-aws" # Your AWS profile
   }
 }

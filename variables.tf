@@ -101,6 +101,27 @@ variable "ca_server" {
   type        = string
 }
 
+variable "use_own_certificate_for_ingress" {
+  default = false
+  type = bool
+  description = "Set to true if you plan to bring your own certificate for logscale ingest/ui access."
+}
+
+variable "alb_controller_version" {
+  description = "AWS Load balancer controller helm chart version."
+  type        = string
+}
+
+variable "nginx_ingress_helm_chart_version" {
+  description = "Nginx Ingress Controller helm chart version."
+  type        = string
+}
+
+variable "topo_lvm_chart_version" {
+  description = "TopoLVM helm chart version."
+  type        = string
+}
+
 variable "humio_operator_chart_version" {
   description = "Humio Operator helm chart version"
   type        = string
@@ -108,7 +129,6 @@ variable "humio_operator_chart_version" {
 
 variable "humio_operator_version" {
   description = "Humio Operator version"
-  default     = "0.20.3"
   type        = string
 }
 
@@ -120,9 +140,10 @@ variable "humio_operator_extra_values" {
 variable "logscale_cluster_type" {
   description = "Logscale cluster type"
   type        = string
+
   validation {
-    condition     = contains(["basic", "ingress", "internal-ingest"], var.logscale_cluster_type)
-    error_message = "logscale_cluster_type must be one of: basic, advanced, or internal-ingest"
+    condition       = contains(["basic", "ingress", "dedicated-ui", "advanced"], var.logscale_cluster_type)
+    error_message   = "logscale_cluster_type must be one of: basic, ingress, dedicated-ui or advanced"
   }
 }
 
@@ -134,6 +155,39 @@ variable "logscale_cluster_size" {
     condition     = contains(["xsmall", "small", "medium", "large", "xlarge"], var.logscale_cluster_size)
     error_message = "logscale_cluster_size must be one of: xsmall, small, medium, large, or xlarge"
   }
+}
+
+variable "extra_user_logscale_envvars" {
+  type = list(object({
+    name=string,
+    value=optional(string)
+    valueFrom=optional(object({
+      secretKeyRef = object({
+        name = string
+        key = string
+      })
+    }))
+  }))
+  description = "Extra environment variables passed into the HumioCluster resource spec definition that will be used for all created logscale instances. Supports string values and kubernetes secret refs. Will override any values defined by default in the configuration."
+  default = []
+}
+
+variable "provision_kafka_servers" {
+  description = "Set this to true to provision strimzi kafka within this kubernetes cluster. It should be false if you are bringing your own kafka implementation."
+  default = false
+  type = bool
+}
+
+variable "strimzi_operator_chart_version" {
+  type            = string
+  description     = "Helm chart version for installing strimzi."
+  default         = ""
+}
+
+variable "strimzi_operator_version" {
+  type            = string
+  description     = "Strimzi operator version for resource definition installation."
+  default         = "" 
 }
 
 variable "kafka_version" {
@@ -163,6 +217,12 @@ variable "hostname" {
 
 variable "eks_s3_bucket_prefix" {
   description = "The prefix of the LogScale S3 bucket"
+  type        = string
+  default     = ""
+}
+
+variable "kubeconfig_filepath" {
+  description = "The filepath where the EKS kubeconfig file will be placed"
   type        = string
   default     = ""
 }

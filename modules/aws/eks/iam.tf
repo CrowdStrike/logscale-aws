@@ -37,7 +37,7 @@ data "aws_iam_policy_document" "logscale_bucket_policy" {
     ]
 
     resources = [
-      "arn:aws:kms:${data.aws_region.current.name}:${data.aws_caller_identity.current.id}:key/*"
+      "arn:aws:kms:${data.aws_region.current.region}:${data.aws_caller_identity.current.id}:key/*"
     ]
   }
 }
@@ -75,11 +75,12 @@ resource "aws_iam_role_policy_attachment" "logscale_policy_attachment" {
   policy_arn = aws_iam_policy.logscale_iam_policy.arn
 }
 
-
 # ELB Ingress controller
 module "iam_eks_role_lb_controller" {
-  source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  role_name = "AmazonEKS_LoadBalancer_Controller_Role-${var.cluster_name}"
+  source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
+  version   = "~> 6.2"
+
+  name = "EKS_LB_Controller_Role-${var.cluster_name}"
 
   attach_load_balancer_controller_policy = true
 

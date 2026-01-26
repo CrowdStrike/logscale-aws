@@ -22,6 +22,7 @@ resource "aws_kms_key" "kms" {
 
 module "msk_cluster" {
   source = "terraform-aws-modules/msk-kafka-cluster/aws"
+  version = "~> 2.13"
 
   name                   = "${var.msk_cluster_name}-${var.cluster_name}"
   kafka_version          = var.kafka_version
