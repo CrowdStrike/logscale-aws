@@ -1,23 +1,34 @@
 locals {
-  eks_managed_node_groups = lookup({
-    "basic" = {
-      logscale_node_group = local.logscale_node_group
-    }
-    "ingress" = {
+  # For standby DR clusters, deploy logscale_node_group (digest) and logscale_ingress_node_group.
+  # kafka_node_group is only included when provision_kafka_servers is true (Strimzi on EKS).
+  # When provision_kafka_servers is false, the cluster uses MSK and no kafka nodes are needed.
+  # Ingest and ui node groups are NOT deployed in standby mode.
+  # For active clusters, deploy based on cluster type (original main branch logic).
+  eks_managed_node_groups = var.dr == "standby" ? merge(
+    {
       logscale_node_group         = local.logscale_node_group
       logscale_ingress_node_group = local.logscale_ingress_node_group
-    }
-    "dedicated-ui" = {
-      logscale_ingress_node_group = local.logscale_ingress_node_group
-      logscale_node_group         = local.logscale_node_group
-      logscale_ui_node_group      = local.logscale_ui_node_group
-    }
-    "advanced" = {
-      logscale_ingress_node_group = local.logscale_ingress_node_group
-      logscale_node_group         = local.logscale_node_group
-      logscale_ingest_node_group  = local.logscale_ingest_node_group
-      logscale_ui_node_group      = local.logscale_ui_node_group
-    }
+    },
+    var.provision_kafka_servers ? { kafka_node_group = local.kafka_node_group } : {}
+    ) : lookup({
+      "basic" = {
+        logscale_node_group = local.logscale_node_group
+      }
+      "ingress" = {
+        logscale_node_group         = local.logscale_node_group
+        logscale_ingress_node_group = local.logscale_ingress_node_group
+      }
+      "dedicated-ui" = {
+        logscale_ingress_node_group = local.logscale_ingress_node_group
+        logscale_node_group         = local.logscale_node_group
+        logscale_ui_node_group      = local.logscale_ui_node_group
+      }
+      "advanced" = {
+        logscale_ingress_node_group = local.logscale_ingress_node_group
+        logscale_node_group         = local.logscale_node_group
+        logscale_ingest_node_group  = local.logscale_ingest_node_group
+        logscale_ui_node_group      = local.logscale_ui_node_group
+      }
   }, var.logscale_cluster_type, {})
 
   # Commons
@@ -26,8 +37,9 @@ locals {
   }
 
   common_properties = {
-    use_name_prefix = true
-    ami_type        = var.ami_type
+    use_name_prefix     = true
+    ami_type            = var.ami_type
+    ami_release_version = var.ami_release_version
 
     subnet_ids = var.private_subnets
     vpc_security_group_ids = [
@@ -61,6 +73,8 @@ locals {
   }
 
   # Basic cluster node group
+  # For standby DR clusters, deploy with only 1 node (min=1, max=1, desired=1)
+  # For active clusters, use the configured capacity values
   logscale_node_group = merge(local.common_properties, {
     name = "logscale"
 
@@ -179,7 +193,7 @@ locals {
     }
 
     labels = merge(local.common_labels, {
-      k8s-app      = "strimzi"
+      k8s-app = "strimzi"
     })
   })
 }

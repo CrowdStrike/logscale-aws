@@ -2,8 +2,10 @@ module "s3_logs_bucket_logscale" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 5.5.0"
 
-  bucket        = var.s3_bucket_prefix != "" ? null : var.cluster_name
-  bucket_prefix = var.s3_bucket_prefix != "" ? var.s3_bucket_prefix : null
+  # Prefer explicit bucket name when provided for deterministic naming.
+  # Fallback: if prefix is provided, AWS will append a random suffix; else use cluster_name.
+  bucket        = (var.s3_bucket_name != null && var.s3_bucket_name != "") ? var.s3_bucket_name : (var.s3_bucket_prefix != "" ? null : var.cluster_name)
+  bucket_prefix = (var.s3_bucket_name != null && var.s3_bucket_name != "") ? null : (var.s3_bucket_prefix != "" ? var.s3_bucket_prefix : null)
 
   acl                      = "private"
   control_object_ownership = true
@@ -12,7 +14,7 @@ module "s3_logs_bucket_logscale" {
   block_public_acls        = true
   restrict_public_buckets  = true
 
-  force_destroy = true
+  force_destroy = var.dr == "standby"
 
   lifecycle_rule = [
     {
@@ -24,20 +26,9 @@ module "s3_logs_bucket_logscale" {
     },
   ]
   versioning = {
-    enabled    = true
+    enabled    = false
     mfa_delete = false
   }
-
-  logging = {
-    target_bucket = module.s3_logs_bucket_logscale.s3_bucket_id
-    target_prefix = "log/"
-    target_object_key_format = {
-      partitioned_prefix = {
-        partition_date_source = "DeliveryTime"
-      }
-    }
-  }
-
 
   tags = var.tags
 }

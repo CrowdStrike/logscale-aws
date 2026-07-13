@@ -41,4 +41,19 @@ resource "helm_release" "aws_lb_controller" {
     value = "${var.hostname}.${var.zone_name}"
   }
 
+  # Enable Gateway API support
+  set {
+    name  = "enableServiceMutatorWebhook"
+    value = "false"
+  }
+
+  set {
+    name  = "controllerConfig.featureGates.ALBGatewayAPI"
+    value = "true"
+  }
+
+  # set {
+  #   name  = "controllerConfig.featureGates.NLBGatewayAPI"
+  #   value = "true"
+  # }
 }

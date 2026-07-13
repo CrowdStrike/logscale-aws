@@ -19,7 +19,7 @@ ${jsonencode(
         "logscale_digest_data_disk_size": "4500Gi",
         "logscale_digest_min_node_count": 3,
         "logscale_digest_max_node_count": 3,
-        "logscale_digest_desired_node_count": 3
+        "logscale_digest_desired_node_count": 3,
         "logscale_digest_resources": {"limits": {"cpu": 6, "memory": "30Gi"}, "requests": {"cpu": 6, "memory": "30Gi"}},
 
         "logscale_ingress_pod_count": 3,
@@ -31,7 +31,7 @@ ${jsonencode(
         "logscale_ingress_min_node_count": 3,
         "logscale_ingress_max_node_count": 3,
         "logscale_ingress_desired_node_count": 3,
-        "logscale_ingress_resources": {"limits": {"cpu": 3, "memory": "6Gi"}, "requests": {"cpu": 3, "memory": "6Gi"}},
+        "logscale_ingress_resources": {"limits": {"cpu": 1, "memory": "4Gi"}, "requests": {"cpu": 1, "memory": "4Gi"}},
 
         "logscale_ingest_pod_count": 3,
         "logscale_ingest_instance_type": "c5.xlarge",
@@ -77,7 +77,7 @@ ${jsonencode(
         "logscale_digest_resources": {"limits": {"cpu": 7, "memory": "52Gi"}, "requests": {"cpu": 7, "memory": "52Gi"}},
 
         "logscale_ingress_pod_count": 6,
-        "logscale_ingress_instance_type": "c5.xlarge",
+        "logscale_ingress_instance_type": "c5.2xlarge",
         "logscale_ingress_root_disk_size": 20,
         "logscale_ingress_root_disk_type": "gp2",
         "logscale_ingress_data_disk_type": "gp2",
