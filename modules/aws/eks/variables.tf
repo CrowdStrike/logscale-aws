@@ -23,6 +23,18 @@ variable "cluster_version" {
   type        = string
 }
 
+variable "vpc_cni_addon_version" {
+  description = "VPC CNI addon version. If not specified, uses most_recent."
+  type        = string
+  default     = null
+}
+
+variable "ebs_csi_addon_version" {
+  description = "EBS CSI driver addon version. If not specified, uses most_recent."
+  type        = string
+  default     = null
+}
+
 variable "logscale_node_desired_capacity" {
   description = "The desired capacity for the logscale managed node group."
   type        = number
@@ -46,6 +58,12 @@ variable "logscale_instance_type" {
 variable "ami_type" {
   description = "The AMI type of the logscale managed node group."
   type        = string
+}
+
+variable "ami_release_version" {
+  description = "The AMI release version for EKS managed node groups"
+  type        = string
+  default     = null
 }
 
 variable "logscale_node_root_volume_size" {
@@ -124,8 +142,8 @@ variable "ui_instance_type" {
 # Kafka
 variable "provision_kafka_servers" {
   description = "Set this to true to provision strimzi kafka within this kubernetes cluster. It should be false if you are bringing your own kafka implementation."
-  default = false
-  type = bool
+  default     = false
+  type        = bool
 }
 
 variable "kafka_broker_node_count" {
@@ -183,10 +201,22 @@ variable "route53_record_ttl" {
   type        = number
 }
 
+variable "global_logscale_hostname" {
+  description = "Short hostname for the global Logscale FQDN within the hosted zone (for example: \"logscale-dr\")"
+  type        = string
+  default     = ""
+}
+
 variable "s3_bucket_prefix" {
   description = "The prefix of the LogScale S3 bucket"
   type        = string
   default     = ""
+}
+
+variable "s3_bucket_name" {
+  description = "Explicit S3 bucket name for LogScale storage. When set, this overrides bucket_prefix to provide a deterministic bucket name."
+  type        = string
+  default     = null
 }
 
 variable "user_data_script" {
@@ -236,8 +266,8 @@ variable "logscale_cluster_type" {
   type        = string
 
   validation {
-    condition       = contains(["basic", "ingress", "dedicated-ui", "advanced"], var.logscale_cluster_type)
-    error_message   = "logscale_cluster_type must be one of: basic, ingress, dedicated-ui or advanced"
+    condition     = contains(["basic", "ingress", "dedicated-ui", "advanced"], var.logscale_cluster_type)
+    error_message = "logscale_cluster_type must be one of: basic, ingress, dedicated-ui or advanced"
   }
 }
 
@@ -279,4 +309,21 @@ variable "logscale_ui_root_disk_size" {
 variable "logscale_ui_root_disk_type" {
   description = "Logscale UI root disk type"
   type        = string
+}
+
+variable "dr" {
+  description = "Disaster Recovery mode: 'active' for primary DR cluster, 'standby' for secondary DR cluster, or '' (empty) for a cluster not participating in DR."
+  type        = string
+  default     = "active"
+
+  validation {
+    condition     = contains(["", "active", "standby"], var.dr)
+    error_message = "dr must be '', 'active', or 'standby'"
+  }
+}
+
+variable "dr_primary_s3_bucket" {
+  description = "Primary cluster's S3 bucket for DR recovery (enables cross-region read access)"
+  type        = string
+  default     = null
 }

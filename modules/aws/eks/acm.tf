@@ -2,9 +2,11 @@ data "aws_route53_zone" "logscale_zone" {
   name = "${var.zone_name}."
 }
 
-
 resource "aws_acm_certificate" "logscale_cert" {
-  domain_name       = "${var.hostname}.${var.zone_name}"
+  domain_name = "${var.hostname}.${var.zone_name}"
+  subject_alternative_names = var.global_logscale_hostname != "" ? [
+    "${var.global_logscale_hostname}.${var.zone_name}"
+  ] : []
   validation_method = "DNS"
 
   lifecycle {
@@ -12,7 +14,6 @@ resource "aws_acm_certificate" "logscale_cert" {
   }
 
   tags = var.tags
-
 }
 
 resource "aws_route53_record" "cert_validation" {

@@ -30,7 +30,7 @@ output "service_account_aws_iam_role_arn" {
 
 output "eks_lb_controller_role_arn" {
   description = "The Amazon Resource Name (ARN) of the IAM role for the LB controller"
-  value = module.iam_eks_role_lb_controller.arn
+  value       = module.iam_eks_role_lb_controller.arn
 }
 
 output "external_dns_iam_role_arn" {

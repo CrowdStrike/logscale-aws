@@ -10,7 +10,6 @@ resource "helm_release" "external_dns" {
     value = "aws"
   }
 
-
   set {
     name  = "aws.region"
     value = var.aws_region
@@ -21,10 +20,9 @@ resource "helm_release" "external_dns" {
     value = "public"
   }
 
-
   set {
-    name  = "source"
-    value = "ingress"
+    name  = "sources[0]"
+    value = "gateway-httproute"
   }
 
   set {
@@ -45,5 +43,14 @@ resource "helm_release" "external_dns" {
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = var.external_dns_iam_role_arn
+  }
+
+  # Only process ingresses that have our ExternalDNS hostname annotation.
+  # This excludes cert-manager ACME HTTP-01 solver ingresses, which would
+  # otherwise cause ExternalDNS to create A records for the global DR hostname
+  # and conflict with the Route53 failover CNAME records managed by global-dns.
+  set {
+    name  = "annotationFilter"
+    value = "external-dns.alpha.kubernetes.io/hostname"
   }
 }

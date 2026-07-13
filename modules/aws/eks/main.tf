@@ -31,8 +31,9 @@ module "eks" {
       most_recent = true
     }
     vpc-cni = {
-      most_recent    = true
-      before_compute = true
+      most_recent                 = true
+      before_compute              = true
+      resolve_conflicts_on_update = "OVERWRITE"
       configuration_values = jsonencode({
         env = {
           ENABLE_PREFIX_DELEGATION = "true"
@@ -41,12 +42,13 @@ module "eks" {
       })
     }
     aws-ebs-csi-driver = {
-      most_recent              = true
-      resolve_conflicts        = "OVERWRITE"
-      service_account_role_arn = aws_iam_role.ebs_csi_role.arn
+      most_recent                 = true
+      resolve_conflicts_on_update = "OVERWRITE"
+      service_account_role_arn    = aws_iam_role.ebs_csi_role.arn
     }
   }
 
-  eks_managed_node_groups = var.provision_kafka_servers ? merge(local.eks_managed_node_groups, {kafka_node_group = local.kafka_node_group}) : local.eks_managed_node_groups
-  tags = var.tags
+  # Kafka node group is added via merge when provision_kafka_servers is enabled AND dr is not "standby"
+  eks_managed_node_groups = var.provision_kafka_servers && var.dr != "standby" ? merge(local.eks_managed_node_groups, { kafka_node_group = local.kafka_node_group }) : local.eks_managed_node_groups
+  tags                    = var.tags
 }
